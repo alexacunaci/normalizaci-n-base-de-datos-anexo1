@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Anexos – Ejemplo de Normalización de Base de Datos</title>
+<style>
+  :root{
+    --bg:#0f172a;          /* slate-900 */
+    --card:#111827;        /* gray-900 */
+    --muted:#9ca3af;       /* gray-400 */
+    --text:#e5e7eb;        /* gray-200 */
+    --accent:#22d3ee;      /* cyan-400 */
+    --accent2:#a78bfa;     /* violet-400 */
+    --ok:#34d399;          /* emerald-400 */
+    --warn:#f59e0b;        /* amber-500 */
+    --codebg:#0b1220;
+    --bord:#1f2937;
+  }
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;line-height:1.5}
+  .wrap{max-width:1100px;margin:40px auto;padding:0 20px}
+  header{margin-bottom:28px}
+  h1{font-size:28px;margin:0 0 6px;color:#fff;letter-spacing:.2px}
+  h2{font-size:22px;margin:34px 0 12px;color:#fff}
+  h3{font-size:18px;margin:26px 0 10px;color:#fff}
+  p{color:var(--text);margin:8px 0 12px}
+  .card{background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));border:1px solid var(--bord);border-radius:16px;padding:18px 16px;margin:14px 0;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  .muted{color:var(--muted)}
+  .badge{display:inline-block;padding:4px 10px;border-radius:999px;border:1px solid var(--bord);background:rgba(255,255,255,.04);font-size:12px;margin-right:6px}
+  .ok{border-color:rgba(52,211,153,.35);color:#d1fae5}
+  .warn{border-color:rgba(245,158,11,.35);color:#fff}
+  table{width:100%;border-collapse:collapse;margin:10px 0;border:1px solid var(--bord);border-radius:10px;overflow:hidden}
+  th,td{border-bottom:1px solid var(--bord);padding:10px 12px;text-align:left;vertical-align:top}
+  thead th{background:#0e1726;color:#cbd5e1;font-weight:600}
+  tbody tr:nth-child(odd){background:rgba(255,255,255,.02)}
+  code,kbd,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+  pre{background:var(--codebg);border:1px solid var(--bord);padding:14px;border-radius:12px;overflow:auto;color:#e2e8f0}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+  .chip{border:1px solid var(--bord);background:rgba(255,255,255,.04);padding:6px 10px;border-radius:999px;font-size:12px}
+  .caption{font-size:13px;color:var(--muted);margin-top:6px}
+  .grid{display:grid;gap:14px}
+  @media(min-width:900px){ .grid-2{grid-template-columns:1fr 1fr} }
+  .hr{height:1px;background:var(--bord);margin:24px 0}
+  .toc a{color:var(--accent);text-decoration:none}
+  .toc a:hover{text-decoration:underline}
+  .mark-warn{background:rgba(245,158,11,.15);border:1px dashed var(--warn);padding:4px 8px;border-radius:8px}
+
+    /* Animaciones agregadas */
+    .card {
+        animation: fadeInUp 0.8s ease forwards;
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    @keyframes fadeInUp {
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    h1, h2, h3 {
+        animation: fadeIn 1s ease forwards;
+        opacity: 0;
+    }
+    @keyframes fadeIn {
+        to {
+            opacity: 1;
+        }
+    }
+    table {
+        animation: fadeInTable 1s ease forwards;
+        opacity: 0;
+    }
+    @keyframes fadeInTable {
+        to {
+            opacity: 1;
+        }
+    }
+    </style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<div class="chips">
+<span class="chip">Anexos</span>
+<span class="chip">Normalización</span>
+<span class="chip">1FN · 2FN · 3FN</span>
+<span class="chip">SQLite / SQL</span>
+</div>
+<h1>Anexos – Ejemplo de Normalización de Base de Datos</h1>
+<p class="muted">Documento de apoyo que acompaña el caso práctico de normalización con estudiantes, cursos y profesores. Incluye tablas originales y normalizadas, más script SQL para SQLite Studio.</p>
+</header>
+<div class="card toc">
+<h2>Índice de anexos</h2>
+<ol>
+<li><a href="#anexo1">Anexo 1 – Tabla original sin normalizar</a></li>
+<li><a href="#anexo2">Anexo 2 – Primera Forma Normal (1FN)</a></li>
+<li><a href="#anexo3">Anexo 3 – Segunda Forma Normal (2FN)</a></li>
+<li><a href="#anexo4">Anexo 4 – Tercera Forma Normal (3FN)</a></li>
+<li><a href="#anexo5">Anexo 5 – Descripción del Diagrama ER (3FN)</a></li>
+<li><a href="#anexo6">Anexo 6 –  SQLite Studio</a></li>
+</ol>
+</div>
+<section class="card" id="anexo1">
+<h2>Anexo 1 – Tabla original sin normalizar</h2>
+<p>La columna <strong>CURSO</strong> contiene valores no atómicos (múltiples cursos en una sola celda), lo que incumple 1FN.</p>
+<table>
+<thead>
+<tr><th>ID_ESTUDIANTE</th><th>RUT</th><th>NOMBRE</th><th>CURSO</th><th>NACIONALIDAD</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>20286841-K</td><td>Jorge</td><td>Matemáticas, Lenguaje</td><td>Chile</td></tr>
+<tr><td>2</td><td>18075847-K</td><td>Brenda</td><td>Matemáticas</td><td>Colombia</td></tr>
+<tr><td>3</td><td>17016778-3</td><td>Luis</td><td>Historia</td><td>Argentina</td></tr>
+<tr><td>4</td><td>21616330-3</td><td>Flor</td><td>Historia, Ciencias</td><td>Cuba</td></tr>
+</tbody>
+</table>
+<p class="caption"><span class="badge warn">Observación</span> Celdas con listas (separadas por coma) indican datos divisibles.</p>
+</section>
+<section class="card" id="anexo2">
+<h2>Anexo 2 – Primera Forma Normal (1FN)</h2>
+<p>Se descompone la columna <strong>CURSO</strong> en filas atómicas, cumpliendo con 1FN.</p>
+<table>
+<thead>
+<tr><th>ID_ESTUDIANTE</th><th>RUT</th><th>NOMBRE</th><th>CURSO</th><th>NACIONALIDAD</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>20286841-K</td><td>Jorge</td><td>Matemáticas</td><td>Chile</td></tr>
+<tr><td>1</td><td>20286841-K</td><td>Jorge</td><td>Lenguaje</td><td>Chile</td></tr>
+<tr><td>2</td><td>18075847-K</td><td>Brenda</td><td>Matemáticas</td><td>Colombia</td></tr>
+<tr><td>3</td><td>17016778-3</td><td>Luis</td><td>Historia</td><td>Argentina</td></tr>
+<tr><td>4</td><td>21616330-3</td><td>Flor</td><td>Historia</td><td>Cuba</td></tr>
+<tr><td>4</td><td>21616330-3</td><td>Flor</td><td>Ciencias</td><td>Cuba</td></tr>
+</tbody>
+</table>
+<p class="caption"><span class="badge ok">Resultado</span> Cada celda contiene un único valor; no hay valores repetidos completos.</p>
+</section>
+<section class="card" id="anexo3">
+<h2>Anexo 3 – Segunda Forma Normal (2FN)</h2>
+<p>Se eliminan dependencias parciales separando <em>Estudiante</em> y <em>Curso</em> y creando una tabla de asociación.</p>
+<div class="grid grid-2">
+<div>
+<h3>Tabla Estudiantes</h3>
+<table>
+<thead><tr><th>ID_ESTUDIANTE</th><th>RUT</th><th>NOMBRE</th><th>NACIONALIDAD</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>20286841-K</td><td>Jorge</td><td>Chile</td></tr>
+<tr><td>2</td><td>18075847-K</td><td>Brenda</td><td>Colombia</td></tr>
+<tr><td>3</td><td>17016778-3</td><td>Luis</td><td>Argentina</td></tr>
+<tr><td>4</td><td>21616330-3</td><td>Flor</td><td>Cuba</td></tr>
+</tbody>
+</table>
+</div>
+<div>
+<h3>Tabla Cursos</h3>
+<table>
+<thead><tr><th>ID_CURSO</th><th>NOMBRE_CURSO</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Matemáticas</td></tr>
+<tr><td>2</td><td>Lenguaje</td></tr>
+<tr><td>3</td><td>Historia</td></tr>
+<tr><td>4</td><td>Ciencias</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<h3>Tabla Estudiante_Curso (Asociación)</h3>
+<table>
+<thead><tr><th>ID_ESTUDIANTE</th><th>ID_CURSO</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>1</td></tr>
+<tr><td>1</td><td>2</td></tr>
+<tr><td>2</td><td>1</td></tr>
+<tr><td>3</td><td>3</td></tr>
+<tr><td>4</td><td>3</td></tr>
+<tr><td>4</td><td>4</td></tr>
+</tbody>
+</table>
+<p class="caption"><span class="badge ok">Resultado</span> Los atributos no clave dependen totalmente de la clave primaria de su tabla.</p>
+</section>
+<section class="card" id="anexo4">
+<h2>Anexo 4 – Tercera Forma Normal (3FN)</h2>
+<p>Se eliminan dependencias transitivas separando la entidad <em>Profesor</em> y referenciándola desde <em>Curso</em>.</p>
+<div class="grid grid-2">
+<div>
+<h3>Tabla Profesores</h3>
+<table>
+<thead><tr><th>ID_PROFESOR</th><th>RUT</th><th>NOMBRE</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>12314658-1</td><td>Sam</td></tr>
+<tr><td>2</td><td>12175487-8</td><td>Claudia</td></tr>
+<tr><td>3</td><td>9126316-5</td><td>Tamara</td></tr>
+<tr><td>4</td><td>11871128-9</td><td>Nicanor</td></tr>
+</tbody>
+</table>
+</div>
+<div>
+<h3>Tabla Cursos (normalizada)</h3>
+<table>
+<thead><tr><th>ID_CURSO</th><th>NOMBRE_CURSO</th><th>ID_PROFESOR</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Matemáticas</td><td>1</td></tr>
+<tr><td>2</td><td>Lenguaje</td><td>2</td></tr>
+<tr><td>3</td><td>Historia</td><td>4</td></tr>
+<tr><td>4</td><td>Ciencias</td><td>3</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<p class="caption"><span class="badge ok">Resultado</span> No hay columnas no clave que dependan de otras no clave.</p>
+</section>
+<section class="card" id="anexo5">
+<h2>Anexo 5 – Descripción del Diagrama Entidad–Relación (3FN)</h2>
+<p>Este anexo describe el ERD final para tu caso práctico. .</p>
+<ul>
+<li><strong>Estudiante</strong> (id_estudiante, rut, nombre, nacionalidad)</li>
+<li><strong>Profesor</strong> (id_profesor, rut, nombre)</li>
+<li><strong>Curso</strong> (id_curso, nombre_curso, id_profesor)</li>
+<li><strong>Estudiante_Curso</strong> (id_estudiante, id_curso)</li>
+</ul>
+<p>Relaciones clave:</p>
+<ul>
+<li>Un <em>Estudiante</em> puede estar en muchos <em>Curso</em> (M:N) vía <em>Estudiante_Curso</em>.</li>
+<li>Un <em>Curso</em> es dictado por un <em>Profesor</em> (1:N desde Profesor a Curso).</li>
+<li>Un <em>Profesor</em> puede dictar varios <em>Curso</em>.</li>
+</ul>
+<p class="mark-warn">Sugerencia: añade cardinalidades (1, N) sobre las líneas del diagrama para mayor claridad.</p>
+</section>
+<section class="card" id="anexo6">
+<h2>Anexo 6 –  SQLite Studio</h2>
+<p>Ejecuta el siguiente script en <em>SQLite Studio</em> para crear las tablas (3FN) y cargar los datos de ejemplo. </p>
+<pre><code>-- Creación de tablas (3FN)
+CREATE TABLE Estudiante (
+    id_estudiante INTEGER PRIMARY KEY,
+    rut TEXT NOT NULL,
+    nombre TEXT NOT NULL,
+    nacionalidad TEXT NOT NULL
+);
+
+CREATE TABLE Profesor (
+    id_profesor INTEGER PRIMARY KEY,
+    rut TEXT NOT NULL,
+    nombre TEXT NOT NULL
+);
+
+CREATE TABLE Curso (
+    id_curso INTEGER PRIMARY KEY,
+    nombre_curso TEXT NOT NULL,
+    id_profesor INTEGER,
+    FOREIGN KEY (id_profesor) REFERENCES Profesor(id_profesor)
+);
+
+CREATE TABLE Estudiante_Curso (
+    id_estudiante INTEGER,
+    id_curso INTEGER,
+    PRIMARY KEY (id_estudiante, id_curso),
+    FOREIGN KEY (id_estudiante) REFERENCES Estudiante(id_estudiante),
+    FOREIGN KEY (id_curso) REFERENCES Curso(id_curso)
+);
+
+-- Creación de índices
+CREATE INDEX idx_estudiante_rut ON Estudiante(rut);
+CREATE INDEX idx_profesor_rut ON Profesor(rut);
+CREATE INDEX idx_curso_nombre ON Curso(nombre_curso);
+CREATE INDEX idx_estudiante_curso_est ON Estudiante_Curso(id_estudiante);
+CREATE INDEX idx_estudiante_curso_cur ON Estudiante_Curso(id_curso);
+
+-- Inserción de datos
+INSERT INTO Estudiante (id_estudiante, rut, nombre, nacionalidad) VALUES
+(1, '20286841-K', 'Jorge', 'Chile'),
+(2, '18075847-K', 'Brenda', 'Colombia'),
+(3, '17016778-3', 'Luis', 'Argentina'),
+(4, '21616330-3', 'Flor', 'Cuba');
+
+INSERT INTO Profesor (id_profesor, rut, nombre) VALUES
+(1, '12314658-1', 'Sam'),
+(2, '12175487-8', 'Claudia'),
+(3, '9126316-5', 'Tamara'),
+(4, '11871128-9', 'Nicanor');
+
+INSERT INTO Curso (id_curso, nombre_curso, id_profesor) VALUES
+(1, 'Matemáticas', 1),
+(2, 'Lenguaje', 2),
+(3, 'Historia', 4),
+(4, 'Ciencias', 3);
+
+INSERT INTO Estudiante_Curso (id_estudiante, id_curso) VALUES
+(1, 1),
+(1, 2),
+(2, 1),
+(3, 3),
+(4, 3),
+(4, 4);</code></pre>
+<p class="caption">Puedes copiar/pegar este bloque o exportarlo aparte como archivo <code>.sql</code>.</p>
+</section>
+<div class="hr"></div>
+<footer class="muted">
+<p>Documento generado como anexo de apoyo para el tema: <em>Normalización de Base de Datos</em>. Estructura basada en 1FN, 2FN y 3FN.</p>
+</footer>
+</div>
+</body>
+</html>
